@@ -1,14 +1,22 @@
+import numpy as np
 import wfdb
 from wfdb import processing
+
+# fs - частота сэмпла
+
+# Показать список аннотаций (кажется будет полезно)
+# wfdb.show_ann_labels()
+
+# Показать список классов аннотаций (зачем оно?)
+# wfdb.show_ann_classes()
+
 
 # record - запись кардиограммы
 # annotation - данные аннотаций (точки на графике)
 # sampfrom -> sampto - интервал показа на графике, использовать только sampto
 
-record = wfdb.rdrecord('mitdb/100', sampto=100, channels=[0])
-annotation = wfdb.rdann('mitdb/100', 'atr', sampto=100)
-
-import numpy as np
+record = wfdb.rdrecord('mitdb/100', sampto=3000, channels=[0])
+annotation = wfdb.rdann('mitdb/100', 'atr', sampto=3000)
 
 # Физический сигнал записи
 p_signal = record.p_signal
@@ -17,14 +25,20 @@ p_signal = record.p_signal
 p_signal = np.append(p_signal[0], p_signal[1:])
 
 hard_peaks, soft_peaks = processing.find_peaks(p_signal)
-print("hard=", hard_peaks)
-print("soft=", soft_peaks)
+print("hard\n", hard_peaks)
+print("soft\n", soft_peaks)
 
-# Показать список аннотаций (кажется будет полезно)
-# wfdb.show_ann_labels()
+xqrs = processing.XQRS(p_signal, record.fs)
+xqrs.detect()
 
-# Показать список классов аннотаций (зачем оно?)
-# wfdb.show_ann_classes()
+# Находит индексы R (самые большие пики)
+print("qrs inds\n", xqrs.qrs_inds)
+
+# вычисляет частоту сердцебиения
+heart_rate = processing.compute_hr(len(p_signal), xqrs.qrs_inds, record.fs)
+
+for index in xqrs.qrs_inds:
+    print(index, heart_rate[index])
 
 # record
 # ann
